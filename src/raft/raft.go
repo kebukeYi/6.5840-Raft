@@ -96,9 +96,13 @@ func (rf *Raft) GetState() (int, bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	return rf.currentTerm, rf.role == Leader
-
 }
 
+func (rf *Raft) GetStateSize() int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.persister.RaftStateSize()
+}
 func (rf *Raft) becomeFollowerLocked(term int) {
 	if rf.currentTerm > term {
 		LOG(rf.me, rf.currentTerm, DError, "Can't become Follower currentTerm:%d, lower term:%d", rf.currentTerm, term)
@@ -191,9 +195,9 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Term:         rf.currentTerm,
 	})
 	rf.persistLocked()
-	size := rf.rlog.size() - 1
-	LOG(rf.me, rf.currentTerm, DLeader, "Leader accept log [%d]T%d", size, rf.currentTerm)
-	return size, rf.currentTerm, true
+	index := rf.rlog.size() - 1
+	LOG(rf.me, rf.currentTerm, DLeader, "Leader accept log [%d]T%d", index, rf.currentTerm)
+	return index, rf.currentTerm, true
 }
 
 // Make the service or tester wants to create a Raft server. the ports

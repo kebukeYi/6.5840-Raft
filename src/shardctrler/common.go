@@ -1,5 +1,7 @@
 package shardctrler
 
+import "time"
+
 //
 // Shard controller: assigns shards to replication groups.
 //
@@ -23,19 +25,30 @@ const NShards = 10
 // A configuration -- an assignment of shards to groups.
 // Please don't change this.
 type Config struct {
-	Num    int              // config number
+	ConfigId int // config number
+	//Shards [NShards]int     // shard -> gid
 	Shards [NShards]int     // shard -> gid
 	Groups map[int][]string // gid -> servers[]
 }
 
+func DefaultConfig() Config {
+	return Config{Groups: make(map[int][]string)}
+}
+
+const ClientRequestTimeout = 500 * time.Millisecond
+
 const (
-	OK = "OK"
+	OK             = "OK"
+	ErrWrongLeader = "ErrWrongLeader"
+	ErrTimeout     = "ErrTimeout"
 )
 
 type Err string
 
 type JoinArgs struct {
-	Servers map[int][]string // new GID -> servers mappings
+	Servers  map[int][]string // new GID -> servers mappings[]
+	ClientId int64
+	SeqId    int64
 }
 
 type JoinReply struct {
@@ -44,7 +57,9 @@ type JoinReply struct {
 }
 
 type LeaveArgs struct {
-	GIDs []int
+	ClientId int64
+	SeqId    int64
+	GIDs     []int
 }
 
 type LeaveReply struct {
@@ -53,8 +68,10 @@ type LeaveReply struct {
 }
 
 type MoveArgs struct {
-	Shard int
-	GID   int
+	ClientId int64
+	SeqId    int64
+	Shard    int
+	GID      int
 }
 
 type MoveReply struct {
@@ -63,11 +80,44 @@ type MoveReply struct {
 }
 
 type QueryArgs struct {
-	Num int // desired config number
+	ConfigId int // desired config number
 }
 
 type QueryReply struct {
 	WrongLeader bool
 	Err         Err
 	Config      Config
+}
+
+type Op struct {
+	ConfigId int // for query
+
+	GroupsIds []int            // for leave
+	Servers   map[int][]string // for join
+
+	GroupsId int // for move
+	Shard    int // for move
+
+	OpType OperationType // for machine apply
+
+	ClientID int64 // for shardController
+	SeqId    int64 // for shardController
+}
+type OperationType uint8
+
+const (
+	OpJoin OperationType = iota
+	OpLeave
+	OpMove
+	OpQuery
+)
+
+type OpReply struct {
+	Result Config
+	Err    Err
+}
+
+type LastOperationInfo struct {
+	SeqId int64
+	Reply *OpReply
 }
