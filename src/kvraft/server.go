@@ -26,11 +26,10 @@ type KVServer struct {
 	me      int
 	rf      *raft.Raft
 	applyCh chan raft.ApplyMsg
-	dead    int32 // set by Kill()
 
 	maxraftstate int // snapshot if log grows this big
 	// Your definitions here.
-
+	dead           int32 // set by Kill()
 	stateMachine   *MemoryKVStateMachine
 	notifyCh       map[int]chan *OpReply
 	duplicateTable map[int64]LastOperationInfo // <clientId, {SeqId}>
