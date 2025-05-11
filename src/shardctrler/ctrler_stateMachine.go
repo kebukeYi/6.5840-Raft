@@ -173,7 +173,6 @@ func getMinGidWithShard(gidToshards map[int][]int) int {
 	}
 	return minGid
 }
-
 func copyGroups(groups map[int][]string) map[int][]string {
 	newGroup := make(map[int][]string, len(groups))
 	for gid, servers := range groups {
